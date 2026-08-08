@@ -71,7 +71,6 @@ jobs:
       - name: Verify release protection boundary
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          RELEASE_REVIEWER: aj-maz
         run: node scripts/release/verify-release-controls.mjs
 
   prepare:

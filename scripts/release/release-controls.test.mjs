@@ -3,44 +3,45 @@ import test from 'node:test'
 
 import { verifyReleaseControls } from './release-controls.mjs'
 
-const protectedEnvironment = {
-  protection_rules: [{
-    type: 'required_reviewers',
-    prevent_self_review: false,
-    reviewers: [{ type: 'User', reviewer: { login: 'aj-maz' } }],
-  }],
+const automaticEnvironment = {
+  protection_rules: [{ type: 'branch_policy' }],
+  deployment_branch_policy: {
+    protected_branches: true,
+    custom_branch_policies: false,
+  },
 }
 
-test('accepts the sole-operator protected public release boundary', () => {
+test('accepts automated next releases from protected public branches', () => {
   assert.doesNotThrow(() => verifyReleaseControls({
     repository: { visibility: 'public' },
-    environment: protectedEnvironment,
-    reviewerLogin: 'aj-maz',
+    environment: automaticEnvironment,
   }))
 })
 
 test('rejects private repositories because provenance and free protection are unavailable', () => {
   assert.throws(() => verifyReleaseControls({
     repository: { visibility: 'private' },
-    environment: protectedEnvironment,
-    reviewerLogin: 'aj-maz',
+    environment: automaticEnvironment,
   }), /must be public/)
 })
 
-test('rejects missing approval and sole-operator lockout configurations', () => {
-  assert.throws(() => verifyReleaseControls({
-    repository: { visibility: 'public' },
-    environment: { protection_rules: [] },
-    reviewerLogin: 'aj-maz',
-  }), /must require a reviewer/)
+test('rejects routine approval and unprotected release branches', () => {
   assert.throws(() => verifyReleaseControls({
     repository: { visibility: 'public' },
     environment: {
+      ...automaticEnvironment,
       protection_rules: [{
-        ...protectedEnvironment.protection_rules[0],
-        prevent_self_review: true,
+        type: 'required_reviewers',
+        prevent_self_review: false,
+        reviewers: [{ type: 'User', reviewer: { login: 'aj-maz' } }],
       }],
     },
-    reviewerLogin: 'aj-maz',
-  }), /Self-review must remain enabled/)
+  }), /must not wait/)
+  assert.throws(() => verifyReleaseControls({
+    repository: { visibility: 'public' },
+    environment: {
+      protection_rules: [],
+      deployment_branch_policy: null,
+    },
+  }), /only protected branches/)
 })
