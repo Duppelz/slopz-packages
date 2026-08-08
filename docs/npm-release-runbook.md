@@ -7,8 +7,9 @@ and `@slopz/cli`. It does not publish stable versions.
 
 `.github/workflows/release-packages.yml` is the only trusted GitHub publisher.
 Its build-and-pack job has read-only repository permission and no npm authority.
-The final job uses the protected `package-publishing` environment and receives
-`id-token: write` only after approval.
+The final job receives `id-token: write` only inside the branch-restricted
+`package-publishing` environment. Routine `next` releases do not require a
+second-repository approval; public `main` can change only through required CI.
 
 The release version is deterministic:
 
@@ -94,12 +95,11 @@ disallow traditional tokens. No npm write token belongs in GitHub secrets.
 ## Publishing and verification
 
 A package-tree change merged to `main` automatically selects only that package
-and waits at the protected environment once the `NPM_RELEASES_ENABLED`
-repository variable is set to `true`. Before that switch is enabled, an
-operator can dispatch **Release npm prereleases** from an exact reviewed ref
-and select SDK, CLI, or both.
+and publishes it once the `NPM_RELEASES_ENABLED` repository variable is set to
+`true`. Before that switch is enabled, an operator can dispatch **Release npm
+prereleases** from an exact reviewed ref and select SDK, CLI, or both.
 
-After approval, the workflow:
+The workflow then:
 
 1. publishes only versions that do not already exist;
 2. assigns the `next` tag;
@@ -111,3 +111,8 @@ After approval, the workflow:
 Trusted publishing can emit provenance because both the npm packages and
 `0xSoul/slopz-packages` are public. The private application repository is not
 part of npm's trusted-publisher identity and must never hold an npm token.
+
+Stable npm releases are intentionally not implemented by this prerelease
+workflow. When added, they must use a separate production approval boundary;
+removing routine approval from `next` must not implicitly authorize stable
+publication.
