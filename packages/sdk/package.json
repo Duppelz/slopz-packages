@@ -1,0 +1,41 @@
+{
+  "name": "@slopz/sdk",
+  "version": "0.1.0",
+  "description": "Browser SDK for Slopz identity, community leaderboards, and safe banner delivery",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xSoul/slopz-packages.git",
+    "directory": "packages/sdk"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./host": {
+      "types": "./dist/host.d.ts",
+      "import": "./dist/host.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "pnpm build && node --test test/*.test.mjs && node test/validate-package.mjs",
+    "test:unit": "pnpm build && node --test test/*.test.mjs",
+    "test:package": "pnpm build && node test/validate-package.mjs"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2"
+  }
+}

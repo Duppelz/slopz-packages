@@ -1,0 +1,16 @@
+{
+  "name": "slopz-packages",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "ci:sdk": "pnpm --filter @slopz/sdk test",
+    "ci:cli": "pnpm --filter @slopz/cli test",
+    "test:infra": "node --test scripts/ci/*.test.mjs scripts/release/*.test.mjs && node scripts/verify-export.mjs",
+    "ci:all": "pnpm test:infra && pnpm ci:sdk && pnpm ci:cli && git diff --check"
+  },
+  "type": "module"
+}

@@ -1,0 +1,111 @@
+name: Public package CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-package-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    name: Plan affected package checks
+    runs-on: ubuntu-latest
+    outputs:
+      sdk: ${{ steps.impact.outputs.sdk }}
+      cli: ${{ steps.impact.outputs.cli }}
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Verify public repository infrastructure and export manifest
+        run: node --test scripts/ci/*.test.mjs scripts/release/*.test.mjs && node scripts/verify-export.mjs
+
+      - name: Check changed files for whitespace errors
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          if [[ -z "$BASE_SHA" || "$BASE_SHA" =~ ^0+$ ]]; then
+            git show --check --format= "$HEAD_SHA"
+          else
+            git diff --check "$BASE_SHA...$HEAD_SHA" --
+          fi
+
+      - name: Plan affected packages
+        id: impact
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/ci/plan.mjs --base "$BASE_SHA" --head "$HEAD_SHA"
+
+  sdk:
+    name: SDK
+    needs: plan
+    if: needs.plan.outputs.sdk == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm ci:sdk
+
+  cli:
+    name: CLI
+    needs: plan
+    if: needs.plan.outputs.cli == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm ci:cli
+
+  required:
+    name: Required CI
+    needs:
+      - plan
+      - sdk
+      - cli
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify affected checks
+        env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          SDK_RESULT: ${{ needs.sdk.result }}
+          CLI_RESULT: ${{ needs.cli.result }}
+        run: |
+          test "$PLAN_RESULT" = success
+          for result in "$SDK_RESULT" "$CLI_RESULT"; do
+            test "$result" = success || test "$result" = skipped
+          done

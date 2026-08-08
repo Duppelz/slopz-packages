@@ -1,0 +1,173 @@
+name: Release npm prereleases
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - packages/sdk/**
+      - packages/cli/**
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package content to release under the next tag
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - sdk
+          - cli
+
+permissions:
+  contents: read
+  deployments: read
+
+concurrency:
+  group: npm-prerelease-publishing
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Plan package release
+    if: github.event_name == 'workflow_dispatch' || vars.NPM_RELEASES_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      sdk: ${{ steps.release.outputs.sdk }}
+      sdk_version: ${{ steps.release.outputs.sdk_version }}
+      sdk_tree_hash: ${{ steps.release.outputs.sdk_tree_hash }}
+      cli: ${{ steps.release.outputs.cli }}
+      cli_version: ${{ steps.release.outputs.cli_version }}
+      cli_tree_hash: ${{ steps.release.outputs.cli_tree_hash }}
+      selected: ${{ steps.release.outputs.selected }}
+    steps:
+      - name: Check out release commit
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Test release planner
+        run: node --test scripts/release/*.test.mjs
+
+      - name: Plan changed packages
+        id: release
+        env:
+          BASE_SHA: ${{ github.event.before || '' }}
+          HEAD_SHA: ${{ github.sha }}
+          PACKAGE_SELECTION: ${{ github.event_name == 'push' && 'auto' || inputs.package }}
+        run: >-
+          node scripts/release/plan-npm-release.mjs
+          --selection "$PACKAGE_SELECTION"
+          --base "$BASE_SHA"
+          --head "$HEAD_SHA"
+
+      - name: Verify release protection boundary
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_REVIEWER: aj-maz
+        run: node scripts/release/verify-release-controls.mjs
+
+  prepare:
+    name: Build and pack selected packages
+    needs: plan
+    if: needs.plan.outputs.sdk == 'true' || needs.plan.outputs.cli == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Enable the pinned pnpm release
+        run: corepack enable
+
+      - name: Install locked dependencies without a release cache
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate and pack SDK
+        if: needs.plan.outputs.sdk == 'true'
+        env:
+          RELEASE_VERSION: ${{ needs.plan.outputs.sdk_version }}
+          TREE_HASH: ${{ needs.plan.outputs.sdk_tree_hash }}
+        run: |
+          pnpm ci:sdk
+          node scripts/release/pack-npm-release.mjs \
+            --package sdk \
+            --version "$RELEASE_VERSION" \
+            --tree-hash "$TREE_HASH" \
+            --source-sha "$GITHUB_SHA" \
+            --output release/npm
+
+      - name: Validate and pack CLI
+        if: needs.plan.outputs.cli == 'true'
+        env:
+          RELEASE_VERSION: ${{ needs.plan.outputs.cli_version }}
+          TREE_HASH: ${{ needs.plan.outputs.cli_tree_hash }}
+        run: |
+          pnpm ci:cli
+          node scripts/release/pack-npm-release.mjs \
+            --package cli \
+            --version "$RELEASE_VERSION" \
+            --tree-hash "$TREE_HASH" \
+            --source-sha "$GITHUB_SHA" \
+            --output release/npm
+
+      - name: Upload verified package tarballs
+        uses: actions/upload-artifact@v7
+        with:
+          name: npm-next-${{ github.sha }}
+          path: release/npm
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish selected packages
+    needs:
+      - plan
+      - prepare
+    if: needs.prepare.result == 'success'
+    runs-on: ubuntu-latest
+    environment: package-publishing
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out exact release workflow
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up the npm registry
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Install an OIDC-capable npm CLI
+        run: npm install --global npm@11.16.0
+
+      - name: Download verified package tarballs
+        uses: actions/download-artifact@v8
+        with:
+          name: npm-next-${{ github.sha }}
+          path: release/npm
+
+      - name: Publish through npm trusted publishing
+        run: node scripts/release/publish-npm-release.mjs --release-directory release/npm
+
+      - name: Install and execute public prereleases
+        run: node scripts/release/verify-published-packages.mjs --release-directory release/npm
