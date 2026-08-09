@@ -95,3 +95,7 @@ The gate builds the SDK, runs unit and host-protocol fixtures, creates the real
 npm tarball, enforces its file allowlist, installs it into a temporary standalone
 game, verifies the public runtime exports, and compiles that game against the
 installed package.
+
+Changes under `packages/sdk` are released from the private `staging` branch
+through the allowlisted public package mirror. SDK changes rebuild downstream
+web consumers, while the unrelated CLI package remains skipped.
