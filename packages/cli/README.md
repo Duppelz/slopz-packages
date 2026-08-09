@@ -99,3 +99,7 @@ inferred from a manifest edit.
 
 All read-oriented commands support `--json` so coding agents can consume stable
 machine-readable output without scraping terminal prose.
+
+Changes under `packages/cli` are released from the private `staging` branch
+through the allowlisted public package mirror. CLI-only changes do not rebuild
+or republish the unrelated SDK and web consumers.
