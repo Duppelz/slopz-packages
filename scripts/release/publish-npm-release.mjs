@@ -23,10 +23,19 @@ async function registryVersion(manifest) {
 }
 
 async function waitForVersion(manifest) {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  // npm scans new versions before making them installable. The usual delay is
+  // several minutes and can exceed 15 minutes during busy periods, so keep the
+  // trusted publishing job alive long enough for that asynchronous scan.
+  const attempts = 180
+  const retryDelayMs = 10_000
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
     const published = await registryVersion(manifest)
     if (published) return published
-    await new Promise((resolveDelay) => setTimeout(resolveDelay, 3_000))
+    if (attempt === 0 || (attempt + 1) % 6 === 0) {
+      process.stdout.write(`Waiting for npm to expose ${manifest.name}@${manifest.version} after publish-time scanning.\n`)
+    }
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, retryDelayMs))
   }
   throw new Error(`Timed out waiting for ${manifest.name}@${manifest.version} in the npm registry.`)
 }
