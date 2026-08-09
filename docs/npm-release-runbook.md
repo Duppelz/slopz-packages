@@ -62,13 +62,13 @@ branch, use npm CLI 11.15 or newer with account 2FA:
 
 ```sh
 npm trust github @slopz/sdk \
-  --repo 0xSoul/slopz-packages \
+  --repo Duppelz/slopz-packages \
   --file release-packages.yml \
   --environment package-publishing \
   --allow-publish
 
 npm trust github @slopz/cli \
-  --repo 0xSoul/slopz-packages \
+  --repo Duppelz/slopz-packages \
   --file release-packages.yml \
   --environment package-publishing \
   --allow-publish
@@ -83,7 +83,7 @@ npm trust list @slopz/cli
 
 The values are case-sensitive and exact:
 
-- GitHub owner: `0xSoul`
+- GitHub owner: `Duppelz`
 - repository: `slopz-packages`
 - workflow filename: `release-packages.yml`
 - GitHub environment: `package-publishing`
@@ -109,7 +109,7 @@ The workflow then:
 6. executes the installed CLI's `version` and `help` commands.
 
 Trusted publishing can emit provenance because both the npm packages and
-`0xSoul/slopz-packages` are public. The private application repository is not
+`Duppelz/slopz-packages` are public. The private application repository is not
 part of npm's trusted-publisher identity and must never hold an npm token.
 
 Stable npm releases are intentionally not implemented by this prerelease

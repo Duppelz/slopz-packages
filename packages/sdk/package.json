@@ -6,7 +6,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/0xSoul/slopz-packages.git",
+    "url": "https://github.com/Duppelz/slopz-packages.git",
     "directory": "packages/sdk"
   },
   "publishConfig": {

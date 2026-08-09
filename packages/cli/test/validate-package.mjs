@@ -106,7 +106,7 @@ try {
   assert.equal(installedPackage.version, cliPackage.version)
   assert.equal(Object.hasOwn(installedPackage, 'private'), false)
   assert.equal(installedPackage.license, 'MIT')
-  assert.equal(installedPackage.repository.url, 'https://github.com/0xSoul/slopz-packages.git')
+  assert.equal(installedPackage.repository.url, 'https://github.com/Duppelz/slopz-packages.git')
   assert.equal(installedPackage.repository.directory, 'packages/cli')
   assert.equal(installedPackage.publishConfig.access, 'public')
   assert.equal(installedPackage.bin.slopz, './dist/index.js')
