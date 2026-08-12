@@ -39,21 +39,67 @@ and linked project identities remain isolated by environment.
 
 ## Create a project
 
-Create and link a private draft directly from a game repository:
+Keep the complete publication draft in `slopz.game.json`:
+
+```json
+{
+  "version": 1,
+  "game": {
+    "title": "Bin Night",
+    "pitch": "Wheel the bin out before the truck arrives.",
+    "description": "A tiny midnight timing game about bins and bad decisions.",
+    "engineTags": ["canvas"],
+    "genreTags": ["idle", "browser"],
+    "links": []
+  },
+  "runtime": {
+    "entryUrl": "https://game.example",
+    "launchMode": "embedded"
+  },
+  "coin": {
+    "economyDeployment": "lukso-mainnet-staging",
+    "name": "Bin Night Coin",
+    "symbol": "BIN",
+    "description": "The game coin for Bin Night. It can lose value.",
+    "graduationLyx": "3",
+    "curveFeeBps": 200,
+    "iconSameAsGame": true,
+    "linksSameAsGame": true,
+    "links": []
+  },
+  "media": {
+    "gameIcon": "media/icon.webp",
+    "cover": "media/cover.webp",
+    "screenshots": ["media/gameplay.webp"]
+  }
+}
+```
+
+Validate every field and local media file without logging in, then create the
+project and apply the complete draft:
 
 ```sh
-slopz project create \
-  --title "Bin Night" \
-  --pitch "Wheel the bin out before the truck arrives." \
-  --game-url https://game.example \
-  --sync-slots
+slopz project draft validate
+slopz project create --manifest --sync-slots
 ```
 
 The command reserves the game ID, SDK client ID, slug, and canonical Slopz
 page, writes them to `.slopz/project.json`, connects the developer-hosted build,
-and optionally syncs the complete `slopz.slots.json`. It returns the owner draft
-page as the next step. Metadata/media review and the final Universal Profile
-publication transaction remain in the Slopz app.
+uploads private draft media, stores the complete listing and coin configuration,
+and optionally syncs `slopz.slots.json`. Media must be WebP: icons are square and
+at most 800 px, covers are 16:9 and at most 1800 px wide, screenshots are 16:9
+and at most 1920 px wide, and every file is at most 8 MiB.
+
+Reapply a changed manifest to an existing linked draft with:
+
+```sh
+slopz project draft apply
+```
+
+The CLI never publishes or requests wallet authority. The owner reviews the
+stored page and performs the final Universal Profile publication transaction in
+the Slopz app. The legacy `--title`, `--pitch`, and `--game-url` create flags
+remain available for intentionally creating only a project shell.
 
 `login` uses an authorization-code flow with PKCE and a loopback callback. The
 game never sees the resulting CLI token. The token is stored in
@@ -97,7 +143,7 @@ game from its rental policy:
       "rental": {
         "approval": "manual",
         "offers": [
-          { "key": "week", "duration": "7d", "price": "20" }
+          { "key": "four-hours", "duration": "4h", "price": "5000000" }
         ]
       }
     }

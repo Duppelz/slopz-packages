@@ -2,6 +2,7 @@ import {
   SlopzSdkError,
   type SlopzAd,
   type SlopzAdBooking,
+  type SlopzAdPaymentIntent,
   type SlopzAdSlot,
   type SlopzGameDraft,
   type SlopzGameDraftContent,
@@ -18,6 +19,7 @@ import {
   type SlopzPublishedGamePage,
   type SlopzProvider,
   type SlopzRun,
+  type SlopzRentPage,
   type SlopzScoreResult,
   type SlopzUniversalProfile,
 } from './types.js'
@@ -378,14 +380,20 @@ export class SlopzApiClient {
     return response.slots
   }
 
-  async submitAd(args: {
+  async readRentPage(slug: string): Promise<SlopzRentPage> {
+    const response = await this.post<ApiEnvelope<{ rent: SlopzRentPage }>>('/ads/rent', { slug })
+    return response.rent
+  }
+
+  async prepareAdPayment(args: {
     sessionToken: string
     gameId: string
     slotKey: string
+    offerKey: string
     file: File
     destinationUrl: string
     altText: string
-  }): Promise<SlopzAdBooking> {
+  }): Promise<SlopzAdPaymentIntent> {
     const upload = await this.post<ApiEnvelope<{ uploadUrl: string }>>('/ads/upload-url', {
       sessionToken: args.sessionToken,
       gameId: args.gameId,
@@ -401,14 +409,24 @@ export class SlopzApiClient {
       ? (uploaded as { storageId?: unknown }).storageId
       : null
     if (!uploadResponse.ok || typeof storageId !== 'string') throw new SlopzSdkError('AD_UPLOAD_FAILED')
-    const response = await this.post<ApiEnvelope<{ booking: SlopzAdBooking }>>('/ads/submit', {
+    const response = await this.post<ApiEnvelope<{ booking: SlopzAdPaymentIntent }>>('/ads/prepare', {
       sessionToken: args.sessionToken,
       gameId: args.gameId,
       slotKey: args.slotKey,
+      offerKey: args.offerKey,
       imageStorageId: storageId,
       destinationUrl: args.destinationUrl,
       altText: args.altText,
     })
+    return response.booking
+  }
+
+  async confirmAdPayment(args: {
+    sessionToken: string
+    bookingId: string
+    txHash: string
+  }): Promise<SlopzAdBooking> {
+    const response = await this.post<ApiEnvelope<{ booking: SlopzAdBooking }>>('/ads/confirm-payment', args)
     return response.booking
   }
 

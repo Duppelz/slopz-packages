@@ -92,9 +92,45 @@ export type SlopzAd = {
 
 export type SlopzAdBooking = {
   readonly bookingId: string
-  readonly status: 'requested' | 'scheduled' | 'live' | 'completed' | 'rejected' | 'disabled'
+  readonly status: 'payment_pending' | 'requested' | 'scheduled' | 'live' | 'completed' | 'rejected' | 'disabled'
   readonly startsAt: number
   readonly endsAt: number
+  readonly paymentTxHash?: string
+}
+
+export type SlopzAdPaymentIntent = SlopzAdBooking & {
+  readonly status: 'payment_pending'
+  readonly durationSeconds: number
+  readonly priceAmount: string
+  readonly tokenAddress: string
+  readonly recipientAddress: string
+  readonly paymentReference: string
+}
+
+export type SlopzScheduledAd = {
+  readonly bookingId: string
+  readonly slotKey: string
+  readonly advertiserProfileAddress: string
+  readonly advertiser: string
+  readonly advertiserAvatarUrl?: string
+  readonly imageUrl: string
+  readonly destinationUrl: string
+  readonly altText: string
+  readonly startsAt: number
+  readonly endsAt: number
+  readonly state: 'active' | 'reserved'
+}
+
+export type SlopzRentPage = {
+  readonly gameId: string
+  readonly slug: string
+  readonly title: string
+  readonly developer: string
+  readonly coinSymbol: string
+  readonly tokenAddress: string
+  readonly gameProfileAddress: string
+  readonly slots: readonly SlopzAdSlot[]
+  readonly schedule: readonly SlopzScheduledAd[]
 }
 
 export type SlopzMetadataUploadRole = 'game-icon' | 'cover' | 'screenshot' | 'coin-icon'

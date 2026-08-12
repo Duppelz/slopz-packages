@@ -15,6 +15,8 @@ import {
 } from './config.js'
 import { apiSlots, readSlotManifest } from './slots.js'
 import { createProject } from './project.js'
+import { applyProjectDraft } from './draft.js'
+import { manifestSummary, readGameManifest } from './manifest.js'
 
 const packageMetadata = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
@@ -97,7 +99,10 @@ Usage
   slopz login [--env <name>]
   slopz logout [--env <name>]
   slopz whoami [--env <name>] [--json]
+  slopz project create --manifest [slopz.game.json] [--sync-slots] [--env <name>] [--json]
   slopz project create --title <title> --pitch <pitch> [--game-url <url>] [--sync-slots] [--file slopz.slots.json] [--env <name>] [--json]
+  slopz project draft validate [--file slopz.game.json] [--json]
+  slopz project draft apply [--file slopz.game.json] [--game-url <url>] [--env <name>] [--json]
   slopz project set <game-id> [--env <name>]
   slopz project show [--env <name>] [--json]
   slopz slots validate [--file slopz.slots.json] [--json]
@@ -183,13 +188,45 @@ async function requireProject(cwd: string, environmentName: string): Promise<Pro
 
 async function projectCommand(cwd: string, parsed: ParsedArgs): Promise<void> {
   const action = parsed.positionals[1]
+  const draftAction = action === 'draft' ? parsed.positionals[2] : action === 'apply' ? 'apply' : undefined
+  const manifestFile = stringFlag(parsed, 'file') ?? 'slopz.game.json'
+  if (draftAction === 'validate') {
+    const loaded = await readGameManifest(cwd, manifestFile)
+    const summary = manifestSummary(loaded)
+    output(parsed, `Valid game manifest for ${loaded.manifest.game.title}: ${summary.media instanceof Array ? summary.media.length : 0} image(s).\n`, summary)
+    return
+  }
   const { name, environment } = await authenticated(parsed)
-  if (action === 'create') {
-    const title = stringFlag(parsed, 'title')
-    const pitch = stringFlag(parsed, 'pitch')
+  if (draftAction === 'apply') {
+    const loaded = await readGameManifest(cwd, manifestFile)
+    const project = await requireProject(cwd, name)
     const gameUrlFlag = stringFlag(parsed, 'game-url')
     const gameUrl = gameUrlFlag ? validUrl(gameUrlFlag, 'game-url') : undefined
-    if (!title || !pitch) throw new Error('Usage: slopz project create --title <title> --pitch <pitch> [--game-url <url>] [--sync-slots]')
+    const result = await applyProjectDraft({
+      environmentName: name,
+      environment,
+      project,
+      loaded,
+      ...(gameUrl ? { gameUrl } : {}),
+    })
+    output(parsed, [
+      `Applied the complete ${result.content.title} draft to ${name}.`,
+      `Runtime: ${result.runtime.entryUrl}`,
+      `Media: uploaded ${result.media.length}.`,
+      `Coin: ${result.content.coinName} ($${result.content.coinSymbol}).`,
+      `Review and publish: ${result.next.url}`,
+    ].join('\n') + '\n', result)
+    return
+  }
+  if (action === 'create') {
+    const hasManifest = parsed.flags.has('manifest')
+    const createManifestFile = stringFlag(parsed, 'manifest') ?? 'slopz.game.json'
+    const loaded = hasManifest ? await readGameManifest(cwd, createManifestFile) : null
+    const title = stringFlag(parsed, 'title') ?? loaded?.manifest.game.title
+    const pitch = stringFlag(parsed, 'pitch') ?? loaded?.manifest.game.pitch
+    const gameUrlFlag = stringFlag(parsed, 'game-url')
+    const gameUrl = gameUrlFlag ? validUrl(gameUrlFlag, 'game-url') : loaded?.manifest.runtime.entryUrl
+    if (!title || !pitch) throw new Error('Use `slopz project create --manifest` or provide --title and --pitch.')
     const result = await createProject({
       cwd,
       environmentName: name,
@@ -197,17 +234,28 @@ async function projectCommand(cwd: string, parsed: ParsedArgs): Promise<void> {
       title,
       pitch,
       syncSlots: parsed.flags.has('sync-slots'),
-      ...(gameUrl ? { gameUrl } : {}),
+      ...(!loaded && gameUrl ? { gameUrl } : {}),
       ...(stringFlag(parsed, 'file') ? { slotFile: stringFlag(parsed, 'file')! } : {}),
     })
 
+    const applied = loaded
+      ? await applyProjectDraft({
+          environmentName: name,
+          environment,
+          project: result.game,
+          loaded,
+          ...(gameUrl ? { gameUrl } : {}),
+        })
+      : null
+
     const human = [
       `Created and linked ${title} (${result.game.gameId}) in ${name}.`,
-      result.runtime ? `Runtime: ${result.runtime.entryUrl}` : 'Runtime: add it in the app or pass --game-url when creating the project.',
+      applied ? `Draft: applied complete metadata and ${applied.media.length} image(s).` : null,
+      applied ? `Runtime: ${applied.runtime.entryUrl}` : result.runtime ? `Runtime: ${result.runtime.entryUrl}` : 'Runtime: add it in the app or pass --game-url when creating the project.',
       result.slotCount === null ? 'Slots: not synced.' : `Slots: synced ${result.slotCount}.`,
       `Continue in Slopz: ${result.game.canonicalUrl}`,
-    ].join('\n')
-    output(parsed, `${human}\n`, result)
+    ].filter((line): line is string => Boolean(line)).join('\n')
+    output(parsed, `${human}\n`, applied ? { ...result, draft: applied } : result)
     return
   }
   if (action === 'set') {
@@ -237,7 +285,7 @@ async function projectCommand(cwd: string, parsed: ParsedArgs): Promise<void> {
     output(parsed, `${result.game.title}\nGame: ${result.game.gameId}\nStatus: ${result.game.status}\nPage: ${result.game.canonicalUrl}\n`, result.game)
     return
   }
-  throw new Error('Use `slopz project create`, `slopz project set <game-id>`, or `slopz project show`.')
+  throw new Error('Use `slopz project create`, `slopz project draft validate`, `slopz project draft apply`, `slopz project set <game-id>`, or `slopz project show`.')
 }
 
 async function slotsCommand(cwd: string, parsed: ParsedArgs): Promise<void> {
