@@ -285,6 +285,7 @@ export { SlopzSdkError } from './types.js'
 export type {
   SlopzAd,
   SlopzAdBooking,
+  SlopzAdPaymentIntent,
   SlopzAdSlotDefinition,
   SlopzAdSlotDefinitionResult,
   SlopzAdMount,
@@ -310,6 +311,8 @@ export type {
   SlopzPublishedGamePage,
   SlopzProvider,
   SlopzRun,
+  SlopzRentPage,
+  SlopzScheduledAd,
   SlopzScoreResult,
   SlopzUniversalProfile,
   SlopzVerifiedImage,

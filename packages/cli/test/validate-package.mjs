@@ -46,8 +46,12 @@ const expectedFiles = [
   'dist/auth.js',
   'dist/config.d.ts',
   'dist/config.js',
+  'dist/draft.d.ts',
+  'dist/draft.js',
   'dist/index.d.ts',
   'dist/index.js',
+  'dist/manifest.d.ts',
+  'dist/manifest.js',
   'dist/project.d.ts',
   'dist/project.js',
   'dist/slots.d.ts',
@@ -69,6 +73,18 @@ function parseJson(output, command) {
   } catch {
     assert.fail(`${command} did not return valid JSON:\n${output}`)
   }
+}
+
+function webp(width, height) {
+  const bytes = Buffer.alloc(30)
+  bytes.write('RIFF', 0, 'ascii')
+  bytes.writeUInt32LE(22, 4)
+  bytes.write('WEBP', 8, 'ascii')
+  bytes.write('VP8X', 12, 'ascii')
+  bytes.writeUInt32LE(10, 16)
+  bytes.writeUIntLE(width - 1, 24, 3)
+  bytes.writeUIntLE(height - 1, 27, 3)
+  return bytes
 }
 
 try {
@@ -140,6 +156,7 @@ try {
   assert.equal(help.status, 0, help.stderr)
   assert.match(help.stdout, new RegExp(`Slopz CLI ${cliPackage.version.replaceAll('.', '\\.')}`))
   assert.match(help.stdout, /slopz project create/)
+  assert.match(help.stdout, /slopz project draft apply/)
   assert.match(help.stdout, /slopz slots validate/)
 
   const configure = invoke([
@@ -226,6 +243,38 @@ try {
   const invalidSlots = invoke(['slots', 'validate', '--file', 'invalid.slots.json'])
   assert.equal(invalidSlots.status, 1)
   assert.match(invalidSlots.stderr, /key must start with a lowercase letter/)
+
+  writeFileSync(join(consumerRoot, 'icon.webp'), webp(800, 800))
+  writeFileSync(join(consumerRoot, 'cover.webp'), webp(1600, 900))
+  writeFileSync(join(consumerRoot, 'slopz.game.json'), `${JSON.stringify({
+    version: 1,
+    game: {
+      title: 'Packaged Slop',
+      pitch: 'A complete packaged CLI manifest.',
+      description: 'The installed CLI validates complete game metadata and local media before it changes a remote draft.',
+      engineTags: ['webgl'],
+      genreTags: ['browser'],
+      links: [],
+    },
+    runtime: { entryUrl: 'https://game.example', launchMode: 'embedded' },
+    coin: {
+      economyDeployment: 'lukso-mainnet-staging',
+      name: 'Packaged Slop Coin',
+      symbol: 'PACK',
+      description: 'The Packaged Slop game coin. It can lose value.',
+      graduationLyx: '3',
+      curveFeeBps: 200,
+      iconSameAsGame: true,
+      linksSameAsGame: true,
+      links: [],
+    },
+    media: { gameIcon: 'icon.webp', cover: 'cover.webp', screenshots: [] },
+  }, null, 2)}\n`)
+  const validGame = invoke(['project', 'draft', 'validate', '--json'])
+  assert.equal(validGame.status, 0, validGame.stderr)
+  const gameManifest = parseJson(validGame.stdout, 'slopz project draft validate')
+  assert.equal(gameManifest.title, 'Packaged Slop')
+  assert.equal(gameManifest.media.length, 2)
 
   process.stdout.write(`CLI package validation passed: ${packed.filename}\n`)
 } finally {
