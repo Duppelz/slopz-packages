@@ -48,6 +48,8 @@ const expectedFiles = [
   'dist/config.js',
   'dist/index.d.ts',
   'dist/index.js',
+  'dist/project.d.ts',
+  'dist/project.js',
   'dist/slots.d.ts',
   'dist/slots.js',
   'package.json',
@@ -137,6 +139,7 @@ try {
   const help = invoke(['help'])
   assert.equal(help.status, 0, help.stderr)
   assert.match(help.stdout, new RegExp(`Slopz CLI ${cliPackage.version.replaceAll('.', '\\.')}`))
+  assert.match(help.stdout, /slopz project create/)
   assert.match(help.stdout, /slopz slots validate/)
 
   const configure = invoke([
@@ -160,13 +163,25 @@ try {
 
   const environments = invoke(['env', 'list', '--json'])
   assert.equal(environments.status, 0, environments.stderr)
-  assert.deepEqual(parseJson(environments.stdout, 'slopz env list'), [{
-    name: 'staging',
-    default: true,
-    apiUrl: 'https://staging-api.example',
-    appUrl: 'https://staging.example',
-    connected: false,
-  }])
+  assert.deepEqual(parseJson(environments.stdout, 'slopz env list'), [
+    {
+      name: 'production',
+      default: false,
+      apiUrl: 'https://api.slopz.fun/api',
+      appUrl: 'https://slopz.fun',
+      connected: false,
+    },
+    {
+      name: 'staging',
+      default: true,
+      apiUrl: 'https://staging-api.example',
+      appUrl: 'https://staging.example',
+      connected: false,
+    },
+  ])
+  const defaultProduction = invoke(['env', 'default', 'production', '--json'])
+  assert.equal(defaultProduction.status, 0, defaultProduction.stderr)
+  assert.deepEqual(parseJson(defaultProduction.stdout, 'slopz env default'), { name: 'production', default: true })
   assert.equal(statSync(configPath).mode & 0o777, 0o600)
 
   writeFileSync(join(consumerRoot, 'slopz.slots.json'), `${JSON.stringify({

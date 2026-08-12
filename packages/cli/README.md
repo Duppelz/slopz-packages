@@ -17,23 +17,50 @@ The package installs a `slopz` executable. Its `slopz version` output is read
 from the installed package metadata, so the binary and published tarball cannot
 silently report different versions.
 
-Configure an environment, then authenticate through the browser:
+Production is the built-in default, so normal users can authenticate without
+configuring an endpoint:
 
 ```sh
-slopz env set local \
-  --api-url https://your-convex-site.convex.site \
-  --app-url http://localhost:5173 \
-  --default
 slopz login
 slopz whoami --json
 ```
+
+The official `production` and `staging` endpoints are built in. Select staging
+per command or make it the local default:
+
+```sh
+slopz login --env staging
+slopz env default staging
+slopz env list --json
+```
+
+Use `slopz env set` only for local development or a custom deployment. Tokens
+and linked project identities remain isolated by environment.
+
+## Create a project
+
+Create and link a private draft directly from a game repository:
+
+```sh
+slopz project create \
+  --title "Bin Night" \
+  --pitch "Wheel the bin out before the truck arrives." \
+  --game-url https://game.example \
+  --sync-slots
+```
+
+The command reserves the game ID, SDK client ID, slug, and canonical Slopz
+page, writes them to `.slopz/project.json`, connects the developer-hosted build,
+and optionally syncs the complete `slopz.slots.json`. It returns the owner draft
+page as the next step. Metadata/media review and the final Universal Profile
+publication transaction remain in the Slopz app.
 
 `login` uses an authorization-code flow with PKCE and a loopback callback. The
 game never sees the resulting CLI token. The token is stored in
 `~/.slopz/config.json` with owner-only file permissions and can be revoked with
 `slopz logout`.
 
-## Link a project
+## Link an existing project
 
 From a game repository, link the local directory to a game owned by the
 authenticated developer:

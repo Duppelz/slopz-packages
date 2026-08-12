@@ -26,6 +26,19 @@ export type ProjectState = {
   environments: Record<string, ProjectEnvironment>
 }
 
+export const OFFICIAL_ENVIRONMENTS: Readonly<Record<string, Readonly<Pick<EnvironmentConfig, 'apiUrl' | 'appUrl'>>>> = {
+  production: {
+    apiUrl: 'https://api.slopz.fun/api',
+    appUrl: 'https://slopz.fun',
+  },
+  staging: {
+    apiUrl: 'https://clear-axolotl-254.convex.site/api',
+    appUrl: 'https://staging.slopz.fun',
+  },
+}
+
+export const DEFAULT_ENVIRONMENT = 'production'
+
 function userConfigPath(): string {
   return process.env.SLOPZ_CONFIG_PATH?.trim() || join(homedir(), '.slopz', 'config.json')
 }
@@ -40,7 +53,7 @@ async function readJson<T>(path: string, fallback: T): Promise<T> {
 }
 
 export async function readUserConfig(): Promise<UserConfig> {
-  return readJson(userConfigPath(), { defaultEnvironment: 'staging', environments: {} })
+  return readJson(userConfigPath(), { defaultEnvironment: DEFAULT_ENVIRONMENT, environments: {} })
 }
 
 export async function writeUserConfig(config: UserConfig): Promise<void> {
@@ -54,8 +67,9 @@ export async function resolveEnvironment(name: string): Promise<EnvironmentConfi
   const config = await readUserConfig()
   const upper = name.replace(/[^a-zA-Z0-9]/g, '_').toUpperCase()
   const stored = config.environments[name]
-  const apiUrl = process.env[`SLOPZ_${upper}_API_URL`]?.trim() || stored?.apiUrl
-  const appUrl = process.env[`SLOPZ_${upper}_APP_URL`]?.trim() || stored?.appUrl
+  const official = OFFICIAL_ENVIRONMENTS[name]
+  const apiUrl = process.env[`SLOPZ_${upper}_API_URL`]?.trim() || stored?.apiUrl || official?.apiUrl
+  const appUrl = process.env[`SLOPZ_${upper}_APP_URL`]?.trim() || stored?.appUrl || official?.appUrl
   if (!apiUrl || !appUrl) {
     throw new Error(`Environment "${name}" is not configured. Run: slopz env set ${name} --api-url <url> --app-url <url>`)
   }

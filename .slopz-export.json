@@ -66,7 +66,7 @@
         },
         {
           "path": "README.md",
-          "sha256": "c863f169cf552d1756f7615681ff2041c92fee1e711f33fb9263faac9018d2f6"
+          "sha256": "c08eebd5cbedc9fd143499737c0aa075b67029bf3d11fe30c88518619d5e6178"
         },
         {
           "path": "package.json",
@@ -82,15 +82,27 @@
         },
         {
           "path": "src/config.ts",
-          "sha256": "1c9be5cdf2d62946f77ce394267d606ecb456ded7d0da7c44ece749dad834850"
+          "sha256": "87653828c7e744e7cdbb5fd7681f1cbaeb7e79967bb9219970c7468b189574de"
         },
         {
           "path": "src/index.ts",
-          "sha256": "e827d10937b06fc894127f725c88fc1ee8b472b1ae67e0f63a1e29ec3f5385f1"
+          "sha256": "af8fffdcda8662fd8556e2fee4a370a197366b8fcce83792ce968a70932e0bcb"
+        },
+        {
+          "path": "src/project.ts",
+          "sha256": "ab77b9c5d90903a306f980eeab3f1161ddafc52afb659d1e272fb0624ccb909d"
         },
         {
           "path": "src/slots.ts",
           "sha256": "d3d5254d59ef30b43167e61ab685a1623c1d0e47c50f35609e43ce4b664709e5"
+        },
+        {
+          "path": "test/config.test.mjs",
+          "sha256": "ca975af6bc796c1e5a450063c847f8a390131df8893d9600255a10d6e276d9b6"
+        },
+        {
+          "path": "test/project-create.test.mjs",
+          "sha256": "03f61f1c7724b21154c4616efd9a8959d4c80b680ca8c26be388b80ecea2a874"
         },
         {
           "path": "test/slots.test.mjs",
@@ -98,14 +110,14 @@
         },
         {
           "path": "test/validate-package.mjs",
-          "sha256": "dd8a24b3f485064e0f25f735101aa23547ff89b6c40427feb68b1e2fd5cd0ecb"
+          "sha256": "670d4409a9fd7750c10ccc47530fbdc8a735454bc40cacd1bf89473fe22f56c4"
         },
         {
           "path": "tsconfig.json",
           "sha256": "fec125705d6c8955a3acf0d6d9c636d1ca5867e6f7bfdc82c4a8f8371af77db4"
         }
       ],
-      "sha256": "93ed12baeea03462483cc16237cf45ec86a8ec1b17208ffcb6547dc24520ae48"
+      "sha256": "d6ee47c3af002bc7f8f3dcedd555e7e1f356164637946e67fd13a0dc7102e198"
     }
   }
 }
