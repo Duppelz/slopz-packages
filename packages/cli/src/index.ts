@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs'
 import { post } from './api.js'
 import { login, logout, requireLogin } from './auth.js'
 import {
+  DEFAULT_ENVIRONMENT,
+  OFFICIAL_ENVIRONMENTS,
   readProjectState,
   readUserConfig,
   resolveEnvironment,
@@ -12,6 +14,7 @@ import {
   type ProjectEnvironment,
 } from './config.js'
 import { apiSlots, readSlotManifest } from './slots.js'
+import { createProject } from './project.js'
 
 const packageMetadata = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
@@ -89,10 +92,12 @@ function help(): void {
 
 Usage
   slopz env set <name> --api-url <url> --app-url <url> [--default]
+  slopz env default <name>
   slopz env list [--json]
   slopz login [--env <name>]
   slopz logout [--env <name>]
   slopz whoami [--env <name>] [--json]
+  slopz project create --title <title> --pitch <pitch> [--game-url <url>] [--sync-slots] [--file slopz.slots.json] [--env <name>] [--json]
   slopz project set <game-id> [--env <name>]
   slopz project show [--env <name>] [--json]
   slopz slots validate [--file slopz.slots.json] [--json]
@@ -106,27 +111,40 @@ reviewed placement manifest and rental settings; public players cannot mutate it
 
 async function environmentName(parsed: ParsedArgs): Promise<string> {
   const config = await readUserConfig()
-  return stringFlag(parsed, 'env') ?? config.defaultEnvironment ?? 'staging'
+  return stringFlag(parsed, 'env') ?? config.defaultEnvironment ?? DEFAULT_ENVIRONMENT
 }
 
 async function envCommand(parsed: ParsedArgs): Promise<void> {
   const action = parsed.positionals[1]
   const config = await readUserConfig()
   if (action === 'list') {
-    const environments = Object.entries(config.environments).map(([name, environment]) => ({
-      name,
-      default: name === config.defaultEnvironment,
-      apiUrl: environment.apiUrl,
-      appUrl: environment.appUrl,
-      connected: Boolean(environment.cliToken),
-      profileAddress: environment.profileAddress,
+    const names = [...new Set([...Object.keys(OFFICIAL_ENVIRONMENTS), ...Object.keys(config.environments)])]
+    const environments = await Promise.all(names.map(async (name) => {
+      const environment = await resolveEnvironment(name)
+      return {
+        name,
+        default: name === (config.defaultEnvironment ?? DEFAULT_ENVIRONMENT),
+        apiUrl: environment.apiUrl,
+        appUrl: environment.appUrl,
+        connected: Boolean(environment.cliToken),
+        profileAddress: environment.profileAddress,
+      }
     }))
     output(parsed, environments.length
       ? `${environments.map((environment) => `${environment.default ? '* ' : '  '}${environment.name}\t${environment.apiUrl}\t${environment.connected ? 'connected' : 'disconnected'}`).join('\n')}\n`
       : 'No environments configured.\n', environments)
     return
   }
-  if (action !== 'set') throw new Error('Use `slopz env set` or `slopz env list`.')
+  if (action === 'default') {
+    const name = parsed.positionals[2]
+    if (!name) throw new Error('Usage: slopz env default <name>')
+    await resolveEnvironment(name)
+    config.defaultEnvironment = name
+    await writeUserConfig(config)
+    output(parsed, `Default environment is now ${name}.\n`, { name, default: true })
+    return
+  }
+  if (action !== 'set') throw new Error('Use `slopz env set`, `slopz env default`, or `slopz env list`.')
   const name = parsed.positionals[2]
   const apiUrl = stringFlag(parsed, 'api-url')
   const appUrl = stringFlag(parsed, 'app-url')
@@ -166,6 +184,32 @@ async function requireProject(cwd: string, environmentName: string): Promise<Pro
 async function projectCommand(cwd: string, parsed: ParsedArgs): Promise<void> {
   const action = parsed.positionals[1]
   const { name, environment } = await authenticated(parsed)
+  if (action === 'create') {
+    const title = stringFlag(parsed, 'title')
+    const pitch = stringFlag(parsed, 'pitch')
+    const gameUrlFlag = stringFlag(parsed, 'game-url')
+    const gameUrl = gameUrlFlag ? validUrl(gameUrlFlag, 'game-url') : undefined
+    if (!title || !pitch) throw new Error('Usage: slopz project create --title <title> --pitch <pitch> [--game-url <url>] [--sync-slots]')
+    const result = await createProject({
+      cwd,
+      environmentName: name,
+      environment,
+      title,
+      pitch,
+      syncSlots: parsed.flags.has('sync-slots'),
+      ...(gameUrl ? { gameUrl } : {}),
+      ...(stringFlag(parsed, 'file') ? { slotFile: stringFlag(parsed, 'file')! } : {}),
+    })
+
+    const human = [
+      `Created and linked ${title} (${result.game.gameId}) in ${name}.`,
+      result.runtime ? `Runtime: ${result.runtime.entryUrl}` : 'Runtime: add it in the app or pass --game-url when creating the project.',
+      result.slotCount === null ? 'Slots: not synced.' : `Slots: synced ${result.slotCount}.`,
+      `Continue in Slopz: ${result.game.canonicalUrl}`,
+    ].join('\n')
+    output(parsed, `${human}\n`, result)
+    return
+  }
   if (action === 'set') {
     const gameId = parsed.positionals[2]
     if (!gameId) throw new Error('Usage: slopz project set <game-id>')
@@ -193,7 +237,7 @@ async function projectCommand(cwd: string, parsed: ParsedArgs): Promise<void> {
     output(parsed, `${result.game.title}\nGame: ${result.game.gameId}\nStatus: ${result.game.status}\nPage: ${result.game.canonicalUrl}\n`, result.game)
     return
   }
-  throw new Error('Use `slopz project set <game-id>` or `slopz project show`.')
+  throw new Error('Use `slopz project create`, `slopz project set <game-id>`, or `slopz project show`.')
 }
 
 async function slotsCommand(cwd: string, parsed: ParsedArgs): Promise<void> {
