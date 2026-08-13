@@ -47,7 +47,7 @@ test('normalizes placement and rental sections for the API', async () => {
   }
 })
 
-test('rejects automatic approval for an ordinary developer manifest', async () => {
+test('normalizes automatic screening for an ordinary developer manifest', async () => {
   const temporary = await fixture({
     version: 1,
     slots: [{
@@ -57,7 +57,24 @@ test('rejects automatic approval for an ordinary developer manifest', async () =
     }],
   })
   try {
-    await assert.rejects(() => readSlotManifest(temporary.directory), /approval must be "manual"/)
+    const manifest = await readSlotManifest(temporary.directory)
+    assert.equal(apiSlots(manifest)[0].approvalMode, 'automatic')
+  } finally {
+    await temporary.close()
+  }
+})
+
+test('rejects automatic screening for animated creatives', async () => {
+  const temporary = await fixture({
+    version: 1,
+    slots: [{
+      key: 'billboard',
+      placement: { label: 'Billboard', description: 'Arena wall', width: 720, height: 500, allowAnimated: true },
+      rental: { approval: 'automatic', offers: [{ key: 'day', duration: '1d', price: '5' }] },
+    }],
+  })
+  try {
+    await assert.rejects(() => readSlotManifest(temporary.directory), /cannot combine automatic approval with animated creatives/)
   } finally {
     await temporary.close()
   }

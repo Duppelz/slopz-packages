@@ -19,7 +19,7 @@ export type SlotManifestEntry = {
     contentRules?: string
   }
   rental: {
-    approval?: 'manual'
+    approval?: 'manual' | 'automatic'
     availableFrom?: string
     availableUntil?: string | null
     offers: SlotOffer[]
@@ -40,7 +40,7 @@ export type ApiSlotInput = {
   maxFileSize: number
   allowAnimated: boolean
   contentRules: string
-  approvalMode: 'manual'
+  approvalMode: 'manual' | 'automatic'
   availableFrom?: number
   availableUntil?: number
   offers: { key: string; durationSeconds: number; priceAmount: string }[]
@@ -101,8 +101,8 @@ export async function readSlotManifest(cwd: string, file = 'slopz.slots.json'): 
 
     const placement = record(slot.placement, `${prefix}.placement`)
     const rental = record(slot.rental, `${prefix}.rental`)
-    if (rental.approval !== undefined && rental.approval !== 'manual') {
-      throw new Error(`${prefix}.rental.approval must be "manual"; automatic approval is reserved for trusted first-party slots.`)
+    if (rental.approval !== undefined && rental.approval !== 'manual' && rental.approval !== 'automatic') {
+      throw new Error(`${prefix}.rental.approval must be "manual" or "automatic".`)
     }
     if (!Array.isArray(rental.offers) || rental.offers.length < 1 || rental.offers.length > 8) {
       throw new Error(`${prefix}.rental.offers must contain 1–8 offers.`)
@@ -130,6 +130,11 @@ export async function readSlotManifest(cwd: string, file = 'slopz.slots.json'): 
     if (availableFrom && availableUntil && Date.parse(availableUntil) <= Date.parse(availableFrom)) {
       throw new Error(`${prefix}.rental.availableUntil must be later than availableFrom.`)
     }
+    const allowAnimated = placement.allowAnimated === true
+    const approval = rental.approval ?? 'manual'
+    if (approval === 'automatic' && allowAnimated) {
+      throw new Error(`${prefix} cannot combine automatic approval with animated creatives.`)
+    }
     return {
       key,
       placement: {
@@ -140,13 +145,13 @@ export async function readSlotManifest(cwd: string, file = 'slopz.slots.json'): 
         maxFileSize: placement.maxFileSize === undefined
           ? 1024 * 1024
           : integer(placement.maxFileSize, `${prefix}.placement.maxFileSize`, 64 * 1024, 8 * 1024 * 1024),
-        allowAnimated: placement.allowAnimated === true,
+        allowAnimated,
         contentRules: placement.contentRules === undefined
           ? 'No fake giveaways, malware, impersonation, gore, or deceptive wallet prompts.'
           : text(placement.contentRules, `${prefix}.placement.contentRules`, 1_000),
       },
       rental: {
-        approval: 'manual',
+        approval,
         ...(availableFrom ? { availableFrom } : {}),
         ...(availableUntil ? { availableUntil } : {}),
         offers,
@@ -166,7 +171,7 @@ export function apiSlots(manifest: SlotManifest): ApiSlotInput[] {
     maxFileSize: slot.placement.maxFileSize ?? 1024 * 1024,
     allowAnimated: slot.placement.allowAnimated ?? false,
     contentRules: slot.placement.contentRules ?? 'No fake giveaways, malware, impersonation, gore, or deceptive wallet prompts.',
-    approvalMode: 'manual',
+    approvalMode: slot.rental.approval ?? 'manual',
     ...(slot.rental.availableFrom ? { availableFrom: Date.parse(slot.rental.availableFrom) } : {}),
     ...(slot.rental.availableUntil ? { availableUntil: Date.parse(slot.rental.availableUntil) } : {}),
     offers: slot.rental.offers.map((offer) => ({
