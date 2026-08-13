@@ -141,7 +141,7 @@ game from its rental policy:
         "contentRules": "Static game-safe promotion only."
       },
       "rental": {
-        "approval": "manual",
+        "approval": "automatic",
         "offers": [
           { "key": "four-hours", "duration": "4h", "price": "5000000" }
         ]
@@ -150,6 +150,11 @@ game from its rental policy:
   ]
 }
 ```
+
+Set `rental.approval` to `"automatic"` to run static creatives through the
+platform's conservative sexual-content screening before payment. Explicit creatives are
+rejected and uncertain classifications require manual review. Animated slots
+must use `"manual"` approval.
 
 Validate locally, inspect the planned API payload, and then sync it:
 

@@ -66,7 +66,7 @@
         },
         {
           "path": "README.md",
-          "sha256": "88d69b9de2c0607fe3463889cd136e2f9d76765fe76fb64b6578e9c5674c43e9"
+          "sha256": "3c26064af084cb4160a7d16142e89392c7608dd72d5d0d227377f6eb9c5bfd5b"
         },
         {
           "path": "package.json",
@@ -102,7 +102,7 @@
         },
         {
           "path": "src/slots.ts",
-          "sha256": "d3d5254d59ef30b43167e61ab685a1623c1d0e47c50f35609e43ce4b664709e5"
+          "sha256": "e725840461c3129d805faeadccab39e58dcf8220f5b7768be900c3b499c0aba5"
         },
         {
           "path": "test/config.test.mjs",
@@ -118,7 +118,7 @@
         },
         {
           "path": "test/slots.test.mjs",
-          "sha256": "c4497bcbb71f2a0e0a3702a756d383f12aad4357a3c343016f41d8f7096b54c5"
+          "sha256": "cd255fa3dd89d3baed14bfa66b1eaa75f98a287ca03ba37c3d7908b947d95b5d"
         },
         {
           "path": "test/validate-package.mjs",
@@ -129,7 +129,7 @@
           "sha256": "fec125705d6c8955a3acf0d6d9c636d1ca5867e6f7bfdc82c4a8f8371af77db4"
         }
       ],
-      "sha256": "b80e0d6b641d2955ac4a2d98f778551a22c0036edb204aa2c367bf9c96f7e1e4"
+      "sha256": "8906459ec0adedd00f74eb934b7a628293106dabea99ae1783e105a2a6a17f0a"
     }
   }
 }
