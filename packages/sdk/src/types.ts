@@ -154,6 +154,8 @@ export type SlopzGameDraft = {
   readonly status: 'draft'
 }
 
+export type SlopzEconomyDeployment = 'lukso-mainnet-staging' | 'lukso-mainnet-production'
+
 export type SlopzGameDraftContent = {
   readonly title: string
   readonly pitch: string
@@ -163,7 +165,7 @@ export type SlopzGameDraftContent = {
   readonly engineTags: readonly string[]
   readonly genreTags: readonly string[]
   readonly profileLinks: readonly { title: string; url: string }[]
-  readonly economyDeployment: 'lukso-mainnet-staging'
+  readonly economyDeployment: SlopzEconomyDeployment
   readonly coinName: string
   readonly coinSymbol: string
   readonly coinDescription: string

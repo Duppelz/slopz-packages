@@ -6,6 +6,8 @@ export type ManifestLink = {
   url: string
 }
 
+export type ManifestEconomyDeployment = 'lukso-mainnet-staging' | 'lukso-mainnet-production'
+
 export type GameManifest = {
   version: 1
   game: {
@@ -21,7 +23,7 @@ export type GameManifest = {
     launchMode: 'embedded'
   }
   coin: {
-    economyDeployment: 'lukso-mainnet-staging'
+    economyDeployment: ManifestEconomyDeployment
     name: string
     symbol: string
     description: string
@@ -228,8 +230,8 @@ function parseManifest(value: unknown): GameManifest {
   if (runtime.launchMode !== 'embedded') throw new Error('runtime.launchMode must be "embedded" for the MVP.')
   const coin = record(root.coin, 'coin')
   keys(coin, ['economyDeployment', 'name', 'symbol', 'description', 'graduationLyx', 'curveFeeBps', 'iconSameAsGame', 'linksSameAsGame', 'links'], 'coin')
-  if (coin.economyDeployment !== 'lukso-mainnet-staging') {
-    throw new Error('coin.economyDeployment must be "lukso-mainnet-staging".')
+  if (coin.economyDeployment !== 'lukso-mainnet-staging' && coin.economyDeployment !== 'lukso-mainnet-production') {
+    throw new Error('coin.economyDeployment must be "lukso-mainnet-staging" or "lukso-mainnet-production".')
   }
   const coinName = text(coin.name, 'coin.name', 120)
   if (Buffer.byteLength(coinName, 'utf8') > 64) throw new Error('coin.name must fit in 64 UTF-8 bytes.')
@@ -268,7 +270,7 @@ function parseManifest(value: unknown): GameManifest {
       launchMode: 'embedded',
     },
     coin: {
-      economyDeployment: 'lukso-mainnet-staging',
+      economyDeployment: coin.economyDeployment,
       name: coinName,
       symbol,
       description: text(coin.description, 'coin.description', 600),

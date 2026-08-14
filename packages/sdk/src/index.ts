@@ -293,6 +293,7 @@ export type {
   SlopzAdWatch,
   SlopzAdWatchOptions,
   SlopzAdSlot,
+  SlopzEconomyDeployment,
   SlopzGameDraft,
   SlopzGameDraftContent,
   SlopzGameDraftMedia,

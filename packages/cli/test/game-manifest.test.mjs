@@ -136,3 +136,33 @@ test('rejects an incomplete or publication-invalid manifest before upload', asyn
     await temporary.close()
   }
 })
+
+test('accepts the production economy deployment and rejects cross-environment apply', async () => {
+  const production = await fixture({
+    coin: {
+      economyDeployment: 'lukso-mainnet-production',
+      name: 'Production Slop Coin',
+      symbol: 'PROD',
+      description: 'A production game coin. It can lose value.',
+      graduationLyx: '3000',
+      curveFeeBps: 200,
+      iconSameAsGame: true,
+      linksSameAsGame: true,
+      links: [],
+    },
+  })
+  try {
+    const loaded = await readGameManifest(production.directory)
+    assert.equal(loaded.manifest.coin.economyDeployment, 'lukso-mainnet-production')
+    await assert.rejects(() => applyProjectDraft({
+      environmentName: 'staging',
+      environment: { apiUrl: 'https://staging-api.example/api', appUrl: 'https://staging.example', cliToken: 'slopz_cli_test' },
+      project: { gameId: 'game_terminal123', clientId: 'slopz_pk_terminal123', slug: 'terminal-slop', canonicalUrl: 'https://staging.example/g/terminal-slop' },
+      loaded,
+      request: async () => { throw new Error('remote mutation should not run') },
+      upload: async () => { throw new Error('upload should not run') },
+    }), /must be "lukso-mainnet-staging"/)
+  } finally {
+    await production.close()
+  }
+})

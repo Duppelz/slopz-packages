@@ -57,11 +57,11 @@ Keep the complete publication draft in `slopz.game.json`:
     "launchMode": "embedded"
   },
   "coin": {
-    "economyDeployment": "lukso-mainnet-staging",
+    "economyDeployment": "lukso-mainnet-production",
     "name": "Bin Night Coin",
     "symbol": "BIN",
     "description": "The game coin for Bin Night. It can lose value.",
-    "graduationLyx": "3",
+    "graduationLyx": "3000",
     "curveFeeBps": 200,
     "iconSameAsGame": true,
     "linksSameAsGame": true,
@@ -82,6 +82,12 @@ project and apply the complete draft:
 slopz project draft validate
 slopz project create --manifest --sync-slots
 ```
+
+Production is the default environment and requires
+`lukso-mainnet-production` in the manifest. For a staging draft, select
+`lukso-mainnet-staging`, use the staging-scale launch target, and pass
+`--env staging`. The CLI rejects a cross-environment manifest before uploading
+media or mutating the remote draft.
 
 The command reserves the game ID, SDK client ID, slug, and canonical Slopz
 page, writes them to `.slopz/project.json`, connects the developer-hosted build,

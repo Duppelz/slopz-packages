@@ -13,7 +13,7 @@
         },
         {
           "path": "package.json",
-          "sha256": "4e1bff1e14ff88b854043b78b8d4837d8a75de9b1d6cc235cd1128bda754fe23"
+          "sha256": "c320414c38ca3ed107a7546ddc1c648ff7d0879726724e05f6130fdc51853a06"
         },
         {
           "path": "src/api.ts",
@@ -25,7 +25,7 @@
         },
         {
           "path": "src/index.ts",
-          "sha256": "d640b9e8ce54ea0012540dcdf12aa6b840a2135b48cd5dd7009aef8ee65d9756"
+          "sha256": "27f24c9b00cc5a788cd2dd0ab20f9b8503f6ef7f31165f992d69072fa75b15f7"
         },
         {
           "path": "src/protocol.ts",
@@ -33,7 +33,7 @@
         },
         {
           "path": "src/types.ts",
-          "sha256": "8c164823bfb3309ea6df8b41fbaa5c5859bdc1e3e9fe8c621be899eccfa93b4f"
+          "sha256": "a7f5050878ec516b0874495fce81cf9233e310e4aa9fb5c5e112e16f1886b8c1"
         },
         {
           "path": "test/api.test.mjs",
@@ -56,7 +56,7 @@
           "sha256": "7ad4e24cd33fec42f3b14eae6c020b792dc6f29a861d64ddc2e2ad375731e508"
         }
       ],
-      "sha256": "5312c67f0e0cdf5a93cd3a5ee21b7f47d7d60549d5219e22d29a019978961f5a"
+      "sha256": "534e5f61b4cc1b46e4020900a5cfbf0d3450d2bff85a45b50aa5a1aaa70d8571"
     },
     "cli": {
       "files": [
@@ -66,11 +66,11 @@
         },
         {
           "path": "README.md",
-          "sha256": "3c26064af084cb4160a7d16142e89392c7608dd72d5d0d227377f6eb9c5bfd5b"
+          "sha256": "a7603817d54f7be885f72d1caf8b665d1b3c28a67947ed4f4243ed354234d9e9"
         },
         {
           "path": "package.json",
-          "sha256": "ad6bf29cddeed775f8ce26685fdf7d76b662cdcb55c90d7468446acff17e92cb"
+          "sha256": "593765459733ef5e481472a1108cb3d4f37bd7f631212c41c0e04dd845457744"
         },
         {
           "path": "src/api.ts",
@@ -86,7 +86,7 @@
         },
         {
           "path": "src/draft.ts",
-          "sha256": "3f2684c1abac5e987c24b82d19d2086d2e39ef03d864c107389b95721eacefe5"
+          "sha256": "6b760a67f2b099a7837a65925181c132d67fd1f588df2957ba936ee65bc0632b"
         },
         {
           "path": "src/index.ts",
@@ -94,7 +94,7 @@
         },
         {
           "path": "src/manifest.ts",
-          "sha256": "21ecdeb7c8d451ab403966d048a50aaddc5372bcf91fcec726813f9b16f967cb"
+          "sha256": "f4d3e5c65913aa2e5973f8dd98fd993d4cefe2933c0047f25e0a42f4d9108bdd"
         },
         {
           "path": "src/project.ts",
@@ -110,7 +110,7 @@
         },
         {
           "path": "test/game-manifest.test.mjs",
-          "sha256": "303b4491dec743680a5ad822e51fc3151a90b07c9b7ece8344f7345bd37e3c26"
+          "sha256": "4d4ae8dabbe06f39195eeb0cd704f262088367757cbd5ded6d91f95c2e8e1134"
         },
         {
           "path": "test/project-create.test.mjs",
@@ -129,7 +129,7 @@
           "sha256": "fec125705d6c8955a3acf0d6d9c636d1ca5867e6f7bfdc82c4a8f8371af77db4"
         }
       ],
-      "sha256": "8906459ec0adedd00f74eb934b7a628293106dabea99ae1783e105a2a6a17f0a"
+      "sha256": "313c21060a18177dcd1dbcee40870ba182ce4fba4af126fb9f0ec8195046e1cc"
     }
   }
 }
