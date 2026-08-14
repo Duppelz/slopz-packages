@@ -119,6 +119,16 @@ export async function applyProjectDraft(args: {
   const request = args.request ?? post
   const upload = args.upload ?? uploadToSignedUrl
   const manifest = args.loaded.manifest
+  const expectedEconomyDeployment = args.environmentName === 'production'
+    ? 'lukso-mainnet-production'
+    : args.environmentName === 'staging'
+      ? 'lukso-mainnet-staging'
+      : null
+  if (expectedEconomyDeployment && manifest.coin.economyDeployment !== expectedEconomyDeployment) {
+    throw new Error(
+      `coin.economyDeployment must be "${expectedEconomyDeployment}" when applying a draft to ${args.environmentName}.`,
+    )
+  }
   const entryUrl = args.gameUrl ?? manifest.runtime.entryUrl
   const runtimeResult = await request<{ ok: true; runtime: Runtime }>(args.environment.apiUrl, '/cli/games/runtime-url', {
     cliToken: args.environment.cliToken,
