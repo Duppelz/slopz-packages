@@ -14,13 +14,14 @@ function argument(name, fallback) {
 }
 
 const selection = argument('--selection', 'auto')
+const channel = argument('--channel', 'next')
 const base = argument('--base', '')
 const head = argument('--head', 'HEAD')
 const changedFiles = selection === 'auto' ? changedFilesBetween(base, head) : []
 const packages = Object.fromEntries(
   Object.keys(packageDefinitions).map((id) => [id, packageState(id, head)]),
 )
-const plan = createReleasePlan({ changedFiles, selection, packages })
+const plan = createReleasePlan({ changedFiles, selection, packages, channel })
 
 writeGithubOutputs(plan)
 process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`)

@@ -13,7 +13,7 @@ import {
 import { tmpdir } from 'node:os'
 import { basename, join, resolve } from 'node:path'
 
-import { packageDefinitions, repositoryRoot } from './npm-packages.mjs'
+import { packageDefinitions, releaseArtifactMetadata, repositoryRoot } from './npm-packages.mjs'
 
 function argument(name, fallback) {
   const index = process.argv.indexOf(name)
@@ -22,15 +22,15 @@ function argument(name, fallback) {
 
 const id = argument('--package')
 const version = argument('--version')
+const channel = argument('--channel', 'next')
+const prerequisiteVersion = argument('--prerequisite-version', '')
 const outputDirectory = resolve(argument('--output', 'release/npm'))
 const sourceSha = argument('--source-sha', '')
 const treeHash = argument('--tree-hash', '')
 const definition = packageDefinitions[id]
 
 if (!definition) throw new Error(`Unknown or missing --package value: ${id ?? ''}`)
-if (!/^\d+\.\d+\.\d+-next\.[0-9A-Za-z.-]+$/.test(version ?? '')) {
-  throw new Error(`Invalid or missing prerelease --version: ${version ?? ''}`)
-}
+const releaseMetadata = releaseArtifactMetadata(channel, version, prerequisiteVersion)
 
 const packageRoot = resolve(repositoryRoot, definition.directory)
 const packageJson = JSON.parse(readFileSync(join(packageRoot, 'package.json'), 'utf8'))
@@ -89,6 +89,7 @@ try {
     name: definition.name,
     baseVersion: packageJson.version,
     version,
+    ...releaseMetadata,
     sourceSha,
     treeHash,
     tarball,

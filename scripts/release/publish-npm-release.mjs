@@ -65,6 +65,16 @@ const manifests = readdirSync(releaseDirectory)
 if (manifests.length === 0) throw new Error('No package release manifests were provided.')
 
 for (const manifest of manifests) {
+  if (!['next', 'latest'].includes(manifest.tag)) throw new Error(`Unsupported npm tag for ${manifest.name}: ${manifest.tag}`)
+  if (manifest.tag === 'latest') {
+    if (!/^\d+\.\d+\.\d+$/.test(manifest.version) || !manifest.prerequisiteVersion) {
+      throw new Error(`Stable release metadata is incomplete for ${manifest.name}.`)
+    }
+    const prerequisite = await registryVersion({ name: manifest.name, version: manifest.prerequisiteVersion })
+    if (!prerequisite) {
+      throw new Error(`Verified prerelease ${manifest.name}@${manifest.prerequisiteVersion} is not available.`)
+    }
+  }
   const existing = await registryVersion(manifest)
   if (existing) {
     verifyIntegrity(manifest, existing)
@@ -75,7 +85,7 @@ for (const manifest of manifests) {
     'publish',
     resolve(releaseDirectory, manifest.tarball),
     '--tag',
-    'next',
+    manifest.tag,
     '--access',
     'public',
   ], { stdio: 'inherit' })

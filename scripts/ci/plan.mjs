@@ -9,7 +9,9 @@ export function planFiles(files) {
     file === 'pnpm-lock.yaml' ||
     file === 'pnpm-workspace.yaml' ||
     file.startsWith('.github/actions/') ||
-    file.startsWith('scripts/ci/'))
+    file.startsWith('.github/workflows/') ||
+    file.startsWith('scripts/ci/') ||
+    file.startsWith('scripts/release/'))
   return {
     sdk: shared || files.some((file) => file.startsWith('packages/sdk/')),
     cli: shared || files.some((file) => file.startsWith('packages/cli/')),

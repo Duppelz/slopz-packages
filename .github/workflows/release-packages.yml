@@ -1,4 +1,4 @@
-name: Release npm prereleases
+name: Release npm packages
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       package:
-        description: Package content to release under the next tag
+        description: Package content to release
         required: true
         default: all
         type: choice
@@ -18,13 +18,21 @@ on:
           - all
           - sdk
           - cli
+      channel:
+        description: Release channel; stable requires an owner dispatch from main and a matching published next version
+        required: true
+        default: next
+        type: choice
+        options:
+          - next
+          - stable
 
 permissions:
   contents: read
   deployments: read
 
 concurrency:
-  group: npm-prerelease-publishing
+  group: npm-package-publishing
   cancel-in-progress: false
 
 jobs:
@@ -40,6 +48,9 @@ jobs:
       cli_version: ${{ steps.release.outputs.cli_version }}
       cli_tree_hash: ${{ steps.release.outputs.cli_tree_hash }}
       selected: ${{ steps.release.outputs.selected }}
+      channel: ${{ steps.release.outputs.channel }}
+      sdk_prerequisite_version: ${{ steps.release.outputs.sdk_prerequisite_version }}
+      cli_prerequisite_version: ${{ steps.release.outputs.cli_prerequisite_version }}
     steps:
       - name: Check out release commit
         uses: actions/checkout@v6
@@ -62,11 +73,20 @@ jobs:
           BASE_SHA: ${{ github.event.before || '' }}
           HEAD_SHA: ${{ github.sha }}
           PACKAGE_SELECTION: ${{ github.event_name == 'push' && 'auto' || inputs.package }}
+          RELEASE_CHANNEL: ${{ github.event_name == 'push' && 'next' || inputs.channel }}
         run: >-
           node scripts/release/plan-npm-release.mjs
           --selection "$PACKAGE_SELECTION"
+          --channel "$RELEASE_CHANNEL"
           --base "$BASE_SHA"
           --head "$HEAD_SHA"
+
+      - name: Require owner-controlled stable releases from main
+        if: steps.release.outputs.channel == 'stable'
+        run: |
+          test "${{ github.event_name }}" = workflow_dispatch
+          test "${{ github.actor }}" = aj-maz
+          test "${{ github.ref }}" = refs/heads/main
 
       - name: Verify release protection boundary
         env:
@@ -101,11 +121,15 @@ jobs:
         env:
           RELEASE_VERSION: ${{ needs.plan.outputs.sdk_version }}
           TREE_HASH: ${{ needs.plan.outputs.sdk_tree_hash }}
+          RELEASE_CHANNEL: ${{ needs.plan.outputs.channel }}
+          PREREQUISITE_VERSION: ${{ needs.plan.outputs.sdk_prerequisite_version }}
         run: |
           pnpm ci:sdk
           node scripts/release/pack-npm-release.mjs \
             --package sdk \
             --version "$RELEASE_VERSION" \
+            --channel "$RELEASE_CHANNEL" \
+            --prerequisite-version "$PREREQUISITE_VERSION" \
             --tree-hash "$TREE_HASH" \
             --source-sha "$GITHUB_SHA" \
             --output release/npm
@@ -115,11 +139,15 @@ jobs:
         env:
           RELEASE_VERSION: ${{ needs.plan.outputs.cli_version }}
           TREE_HASH: ${{ needs.plan.outputs.cli_tree_hash }}
+          RELEASE_CHANNEL: ${{ needs.plan.outputs.channel }}
+          PREREQUISITE_VERSION: ${{ needs.plan.outputs.cli_prerequisite_version }}
         run: |
           pnpm ci:cli
           node scripts/release/pack-npm-release.mjs \
             --package cli \
             --version "$RELEASE_VERSION" \
+            --channel "$RELEASE_CHANNEL" \
+            --prerequisite-version "$PREREQUISITE_VERSION" \
             --tree-hash "$TREE_HASH" \
             --source-sha "$GITHUB_SHA" \
             --output release/npm
@@ -127,7 +155,7 @@ jobs:
       - name: Upload verified package tarballs
         uses: actions/upload-artifact@v7
         with:
-          name: npm-next-${{ github.sha }}
+          name: npm-${{ needs.plan.outputs.channel }}-${{ github.sha }}
           path: release/npm
           if-no-files-found: error
           retention-days: 7
@@ -162,11 +190,11 @@ jobs:
       - name: Download verified package tarballs
         uses: actions/download-artifact@v8
         with:
-          name: npm-next-${{ github.sha }}
+          name: npm-${{ needs.plan.outputs.channel }}-${{ github.sha }}
           path: release/npm
 
       - name: Publish through npm trusted publishing
         run: node scripts/release/publish-npm-release.mjs --release-directory release/npm
 
-      - name: Install and execute public prereleases
+      - name: Install and execute public packages
         run: node scripts/release/verify-published-packages.mjs --release-directory release/npm
