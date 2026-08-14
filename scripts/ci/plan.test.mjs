@@ -18,3 +18,8 @@ test('workspace dependency changes validate both packages', () => {
 test('documentation-only changes do not rebuild packages', () => {
   assert.deepEqual(planFiles(['README.md']), { sdk: false, cli: false })
 })
+
+test('release workflow and tooling changes validate both packages', () => {
+  assert.deepEqual(planFiles(['.github/workflows/release-packages.yml']), { sdk: true, cli: true })
+  assert.deepEqual(planFiles(['scripts/release/pack-npm-release.mjs']), { sdk: true, cli: true })
+})

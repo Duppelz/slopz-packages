@@ -1,7 +1,7 @@
-# npm prerelease runbook
+# npm release runbook
 
-This runbook bootstraps and operates public `next` releases for `@slopz/sdk`
-and `@slopz/cli`. It does not publish stable versions.
+This runbook bootstraps and operates public `next` and stable releases for
+`@slopz/sdk` and `@slopz/cli`.
 
 ## Safety boundary
 
@@ -11,7 +11,7 @@ The final job receives `id-token: write` only inside the branch-restricted
 `package-publishing` environment. Routine `next` releases do not require a
 second-repository approval; public `main` can change only through required CI.
 
-The release version is deterministic:
+The `next` release version is deterministic:
 
 ```text
 <declared version>-next.g<first 12 characters of the package Git tree hash>
@@ -20,6 +20,13 @@ The release version is deterministic:
 Rerunning unchanged content therefore targets the same immutable npm version.
 The publisher verifies the existing registry integrity and skips it instead of
 creating another release. SDK and CLI package trees are planned independently.
+
+A stable release uses the declared package version exactly. It is accepted only
+from an owner-triggered workflow dispatch on protected `main`, and only after
+the deterministic `next` version for the same package Git tree is visible in
+npm. The trusted publisher then packs that same reviewed tree with the stable
+version, publishes it under `latest`, verifies registry integrity, and installs
+the exact public version in a clean consumer project.
 
 ## One-time bootstrap
 
@@ -97,7 +104,8 @@ disallow traditional tokens. No npm write token belongs in GitHub secrets.
 A package-tree change merged to `main` automatically selects only that package
 and publishes it once the `NPM_RELEASES_ENABLED` repository variable is set to
 `true`. Before that switch is enabled, an operator can dispatch **Release npm
-prereleases** from an exact reviewed ref and select SDK, CLI, or both.
+packages** from an exact reviewed ref, select SDK, CLI, or both, and keep the
+channel set to `next`.
 
 The workflow then:
 
@@ -112,7 +120,20 @@ Trusted publishing can emit provenance because both the npm packages and
 `Duppelz/slopz-packages` are public. The private application repository is not
 part of npm's trusted-publisher identity and must never hold an npm token.
 
-Stable npm releases are intentionally not implemented by this prerelease
-workflow. When added, they must use a separate production approval boundary;
-removing routine approval from `next` must not implicitly authorize stable
-publication.
+## Stable publication
+
+After the selected package's deterministic `next` run succeeds and the exact
+version installs from npm:
+
+1. confirm the declared stable version in `packages/<id>/package.json` is the
+   intended release;
+2. open **Release npm packages** on the protected `main` branch;
+3. select the package or `all`, choose the `stable` channel, and dispatch as
+   repository owner `aj-maz`; and
+4. wait for the workflow to prove the matching deterministic `next` version,
+   publish through the existing OIDC trusted-publisher identity, assign
+   `latest`, and install the exact stable versions.
+
+Stable versions are immutable. If the deterministic `next` version for the
+current tree is absent, the workflow fails before npm receives a stable
+publish request.
